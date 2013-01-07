@@ -4,17 +4,13 @@ import com.google.common.collect.Iterables;
 import nodebox.graphics.Canvas;
 import nodebox.graphics.Grob;
 
-import java.awt.*;
 import java.awt.geom.Dimension2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
 public class CanvasVisualizer implements Visualizer {
 
     public static final CanvasVisualizer INSTANCE = new CanvasVisualizer();
-    private Canvas firstCanvas;
 
     private CanvasVisualizer() {
     }
@@ -37,18 +33,9 @@ public class CanvasVisualizer implements Visualizer {
         return new Point2D.Double(size.getWidth() / 2, size.getHeight() / 2);
     }
 
-    @SuppressWarnings("unchecked")
-    public void draw(Graphics2D g, Iterable<?> objects) {
-        firstCanvas = getFirstCanvas(objects);
-        drawCanvasBounds(g, firstCanvas);
-        GrobVisualizer.drawGrobs(g, (Iterable<Grob>) objects);
-    }
-
-    private void drawCanvasBounds(Graphics2D g, Canvas canvas) {
-        Rectangle2D canvasBounds = canvas.getBounds().getRectangle2D();
-        g.setColor(Color.DARK_GRAY);
-        g.setStroke(new BasicStroke(1f));
-        g.draw(canvasBounds);
+    @Override
+    public Grob visualize(Iterable<?> objects) {
+        return getFirstCanvas(objects);
     }
 
     private Canvas getFirstCanvas(Iterable<?> objects) {

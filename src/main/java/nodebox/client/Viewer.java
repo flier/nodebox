@@ -54,6 +54,7 @@ public class Viewer extends PCanvas implements OutputView, Zoom, MouseListener, 
     private java.util.List<Object> outputValues;
     private Class valuesClass;
     private Visualizer currentVisualizer;
+    private final PointVisualizer pointVisualizer = PointVisualizer.INSTANCE;
 
     static {
         Image panCursorImage;
@@ -398,8 +399,10 @@ public class Viewer extends PCanvas implements OutputView, Zoom, MouseListener, 
         }
 
         public void drawObjects(Graphics2D g) {
-            if (currentVisualizer != null)
-                currentVisualizer.draw(g, outputValues);
+            if (currentVisualizer != null) {
+                Grob grob = currentVisualizer.visualize(outputValues);
+                grob.draw(g);
+            }
         }
 
         public void drawHandle(Graphics2D g) {
@@ -425,7 +428,7 @@ public class Viewer extends PCanvas implements OutputView, Zoom, MouseListener, 
                     IGeometry geo = (IGeometry) o;
                     points.addAll(geo.getPoints());
                 }
-                PointVisualizer.drawPoints(g, points);
+                pointVisualizer.visualize(points).draw(g);
             }
         }
 

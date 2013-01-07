@@ -1,10 +1,10 @@
 package nodebox.client.visualizer;
 
-import java.awt.*;
+import nodebox.graphics.Grob;
+
 import java.awt.geom.Dimension2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
-import java.util.List;
 
 public interface Visualizer {
 
@@ -14,6 +14,6 @@ public interface Visualizer {
 
     public Point2D getOffset(Iterable<?> objects, Dimension2D viewerSize);
 
-    public void draw(Graphics2D g, Iterable<?> objects);
+    public Grob visualize(Iterable<?> objects);
 
 }

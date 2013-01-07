@@ -1,16 +1,22 @@
 package nodebox.client.visualizer;
 
-import com.google.common.collect.Iterables;
+import nodebox.graphics.Color;
+import nodebox.graphics.*;
 import nodebox.graphics.Point;
 
 import java.awt.*;
-import java.awt.geom.*;
+import java.awt.geom.Dimension2D;
+import java.awt.geom.Ellipse2D;
+import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
 
 public class PointVisualizer implements Visualizer {
 
     public static final PointVisualizer INSTANCE = new PointVisualizer();
     public static final double HALF_POINT_SIZE = 2;
     public static final double POINT_SIZE = 4;
+    public static final Color ON_CURVE_COLOR = new Color(0, 0, 1);
+    public static final Color OFF_CURVE_COLOR = new Color(1, 0, 0);
 
     private PointVisualizer() {
     }
@@ -40,32 +46,33 @@ public class PointVisualizer implements Visualizer {
         return new Point2D.Double(size.getWidth() / 2, size.getHeight() / 2);
     }
 
-    @SuppressWarnings("unchecked")
-    public void draw(Graphics2D g, Iterable<?> objects) {
-        Object firstObject = Iterables.getFirst(objects, null);
-        if (firstObject instanceof Point)
-            drawPoints(g, (Iterable<Point>) objects);
-        else if (firstObject instanceof Iterable) {
-            for (Object o : objects)
-                draw(g, (Iterable<?>) o);
-        }
+    @Override
+    public Grob visualize(Iterable<?> objects) {
+        Geometry geo = new Geometry();
+        Path onCurves = new Path();
+        onCurves.setFillColor(ON_CURVE_COLOR);
+        Path offCurves = new Path();
+        offCurves.setFillColor(OFF_CURVE_COLOR);
+        geo.add(onCurves);
+        geo.add(offCurves);
+        visualizePoints(objects, onCurves, offCurves);
+        return geo;
     }
 
-    public static void drawPoints(Graphics2D g, Iterable<Point> points) {
-        GeneralPath onCurves = new GeneralPath();
-        GeneralPath offCurves = new GeneralPath();
-        for (Point point : points) {
-            Shape s = new Ellipse2D.Double(point.x - HALF_POINT_SIZE, point.y - HALF_POINT_SIZE, POINT_SIZE, POINT_SIZE);
-            if (point.isOnCurve()) {
-                onCurves.append(s, false);
-            } else {
-                offCurves.append(s, false);
+    private void visualizePoints(Iterable<?> points, Path onCurves, Path offCurves) {
+        for (Object o : points) {
+            if (o instanceof Point) {
+                Point point = (Point) o;
+                Shape s = new Ellipse2D.Double(point.x - HALF_POINT_SIZE, point.y - HALF_POINT_SIZE, POINT_SIZE, POINT_SIZE);
+                if (point.isOnCurve()) {
+                    onCurves.extend(s);
+                } else {
+                    offCurves.extend(s);
+                }
+            } else if (o instanceof Iterable) {
+                visualizePoints((Iterable<?>) o, onCurves, offCurves);
             }
         }
-        g.setColor(Color.BLUE);
-        g.fill(onCurves);
-        g.setColor(Color.RED);
-        g.fill(offCurves);
     }
 
 }

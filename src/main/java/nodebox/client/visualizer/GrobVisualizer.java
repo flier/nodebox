@@ -1,9 +1,8 @@
 package nodebox.client.visualizer;
 
-import com.google.common.collect.Iterables;
+import nodebox.graphics.Canvas;
 import nodebox.graphics.Grob;
 
-import java.awt.*;
 import java.awt.geom.Dimension2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
@@ -45,23 +44,19 @@ public final class GrobVisualizer implements Visualizer {
         return new Point2D.Double(size.getWidth() / 2, size.getHeight() / 2);
     }
 
-    @SuppressWarnings("unchecked")
-    public void draw(Graphics2D g, Iterable<?> objects) {
-        Object firstObject = Iterables.getFirst(objects, null);
-        if (firstObject instanceof Grob)
-            drawGrobs(g, (Iterable<Grob>) objects);
-        else if (firstObject instanceof Iterable) {
-            for (Object o : objects)
-                draw(g, (Iterable<?>) o);
+    @Override
+    public Grob visualize(Iterable<?> objects) {
+        // TODO Find out why we can't use Float.MAX_VALUE here.
+        Canvas c = new Canvas(100000000, 100000000);
+        c.setBackground(null);
+        for (Object o : objects) {
+            if (o instanceof Grob) {
+                c.add((Grob) o);
+            } else if (o instanceof Iterable) {
+                c.add(visualize((Iterable) o));
+            }
         }
-    }
-
-    public static void drawGrobs(Graphics2D g, Iterable<Grob> objects) {
-        for (Grob grob : objects) {
-            Shape oldClip = g.getClip();
-            grob.draw(g);
-            g.setClip(oldClip);
-        }
+        return c;
     }
 
 }

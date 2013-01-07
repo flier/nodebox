@@ -1,9 +1,11 @@
 package nodebox.client;
 
 import com.google.common.collect.ImmutableList;
+import nodebox.client.visualizer.Visualizer;
 import nodebox.function.Function;
 import nodebox.function.FunctionRepository;
-import nodebox.graphics.ObjectsRenderer;
+import nodebox.graphics.Grob;
+import nodebox.graphics.PDFRenderer;
 import nodebox.handle.Handle;
 import nodebox.handle.HandleDelegate;
 import nodebox.movie.Movie;
@@ -12,6 +14,7 @@ import nodebox.node.*;
 import nodebox.node.MenuItem;
 import nodebox.ui.*;
 import nodebox.util.FileUtils;
+import nodebox.util.ListUtils;
 import nodebox.util.LoadException;
 
 import javax.imageio.ImageIO;
@@ -19,6 +22,7 @@ import javax.swing.*;
 import javax.swing.undo.UndoManager;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -164,9 +168,9 @@ public class NodeBoxDocument extends JFrame implements WindowListener, HandleDel
                 return t;
             }
         });
-        if (! nodeLibrary.hasProperty("canvasWidth"))
+        if (!nodeLibrary.hasProperty("canvasWidth"))
             nodeLibrary = nodeLibrary.withProperty("canvasWidth", "1000");
-        if (! nodeLibrary.hasProperty("canvasHeight"))
+        if (!nodeLibrary.hasProperty("canvasHeight"))
             nodeLibrary = nodeLibrary.withProperty("canvasHeight", "1000");
         controller = NodeLibraryController.withLibrary(nodeLibrary);
         invalidateFunctionRepository = true;
@@ -1408,7 +1412,7 @@ public class NodeBoxDocument extends JFrame implements WindowListener, HandleDel
 
     private void exportToFile(File file, Iterable<?> objects, ImageFormat format) {
         file = format.ensureFileExtension(file);
-        ObjectsRenderer.render(objects, file);
+        render(objects, file);
     }
 
     public boolean exportRange() {
@@ -1481,7 +1485,7 @@ public class NodeBoxDocument extends JFrame implements WindowListener, HandleDel
         exportThreadedRange(controller.getNodeLibrary(), fromValue, toValue, new ExportDelegate() {
             @Override
             public void frameDone(double frame, Iterable<?> results) {
-                movie.addFrame(ObjectsRenderer.createMovieImage(results, width, height));
+                movie.addFrame(createMovieImage(results, width, height));
             }
 
             @Override
@@ -1553,6 +1557,49 @@ public class NodeBoxDocument extends JFrame implements WindowListener, HandleDel
         viewer.setVisible(true);
     }
 
+    public static void render(Iterable<?> objects, File file) {
+        Visualizer v = Viewer.getVisualizer(objects, ListUtils.listClass(objects));
+        Grob grob = v.visualize(objects);
+        if (file.getName().toLowerCase().endsWith(".pdf")) {
+            PDFRenderer.render(grob, file);
+        } else {
+            try {
+                ImageIO.write(createImage(v, objects), FileUtils.getExtension(file), file);
+            } catch (IOException e) {
+                throw new RuntimeException("Could not write image file " + file, e);
+            }
+        }
+    }
+
+    public static BufferedImage createImage(Iterable<?> objects) {
+        Visualizer v = Viewer.getVisualizer(objects, ListUtils.listClass(objects));
+        return createImage(v, objects);
+    }
+
+    public static BufferedImage createMovieImage(Iterable<?> objects, int width, int height) {
+        Visualizer v = Viewer.getVisualizer(objects, ListUtils.listClass(objects));
+        BufferedImage img = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setColor(Color.WHITE);
+        g.fillRect(0, 0, width, height);
+        g.translate(width / 2, height / 2);
+        v.visualize(objects).draw(g);
+        img.flush();
+        return img;
+    }
+
+    private static BufferedImage createImage(Visualizer visualizer, Iterable<?> objects) {
+        Rectangle2D bounds = visualizer.getBounds(objects);
+        BufferedImage img = new BufferedImage((int) Math.round(bounds.getWidth()), (int) Math.round(bounds.getHeight()), BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g.translate(-bounds.getX(), -bounds.getY());
+        visualizer.visualize(objects).draw(g);
+        img.flush();
+        return img;
+    }
+
     //// Copy / Paste ////
 
     private class NodeClipboard {
@@ -1605,7 +1652,7 @@ public class NodeBoxDocument extends JFrame implements WindowListener, HandleDel
             controller.setRenderedChild(activeNetworkPath, subnet.getName());
 
         String name = JOptionPane.showInputDialog(this, "Network name:", subnet.getName());
-        if (! name.equals(subnet.getName())) {
+        if (!name.equals(subnet.getName())) {
             controller.renameNode(activeNetworkPath, subnet.getName(), name);
             subnet = getActiveNetwork().getChild(name);
         }
@@ -1667,7 +1714,7 @@ public class NodeBoxDocument extends JFrame implements WindowListener, HandleDel
         requestRender();
     }
 
-    public void zoomView(double scaleDelta)  {
+    public void zoomView(double scaleDelta) {
         PointerInfo a = MouseInfo.getPointerInfo();
         Point point = new Point(a.getLocation());
         for (Zoom zoomListener : zoomListeners) {

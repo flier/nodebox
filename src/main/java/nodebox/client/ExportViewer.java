@@ -31,7 +31,7 @@ public class ExportViewer extends JFrame {
             g2.translate(getWidth() / 2, getHeight() / 2);
             Visualizer v = nodebox.client.Viewer.getVisualizer(outputValues, ListUtils.listClass(outputValues));
             // todo: handle canvas clipping
-            v.draw(g2, outputValues);
+            v.visualize(outputValues).draw(g2);
         }
     }
 }
